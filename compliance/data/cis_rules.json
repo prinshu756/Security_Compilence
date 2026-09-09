@@ -1,82 +1,135 @@
 [
   {
-    "id": "CIS-1.1.2",
+    "id": "CIS-6.10.1.2",
     "framework": "CIS",
-    "name": "SSH version 2 or higher",
+    "name": "SSH version 2 only",
     "field": "management.ssh_version",
-    "operator": "ge",
+    "operator": "eq",
     "expected": 2,
-    "severity": "High",
     "level": "Level 1"
   },
   {
-    "id": "CIS-1.1.3",
+    "id": "CIS-6.10.6",
     "framework": "CIS",
-    "name": "Telnet disabled",
-    "field": "management.telnet_enabled",
-    "operator": "eq",
-    "expected": false,
-    "severity": "High",
-    "level": "Level 1"
-  },
-  {
-    "id": "CIS-1.5.1",
-    "framework": "CIS",
-    "name": "Logging configured (remote or local)",
-    "field": "logging",
+    "name": "Telnet is Not Set",
+    "field": "management.telnet",
     "operator": "exists",
-    "expected": true,
-    "severity": "Medium",
-    "level": "Level 1"
-  },
-  {
-    "id": "CIS-1.6.1",
-    "framework": "CIS",
-    "name": "NTP configured",
-    "field": "ntp.servers",
-    "operator": "non_empty",
-    "expected": true,
-    "severity": "Medium",
-    "level": "Level 1"
-  },
-  {
-    "id": "CIS-2.1.1",
-    "framework": "CIS",
-    "name": "HTTP server disabled",
-    "field": "management.http_enabled",
-    "operator": "eq",
     "expected": false,
-    "severity": "High",
     "level": "Level 1"
   },
   {
-    "id": "CIS-3.1.1",
+    "id": "CIS-6.12.1",
     "framework": "CIS",
-    "name": "AAA authentication configured (RADIUS/TACACS+)",
+    "name": "Logging data is monitored",
+    "field": "logging",
+    "expected": true,
+    "type": "manual",
+    "level": "Level 1"
+  },
+  {
+    "framework": "CIS",
+    "type": "automated",
+    "level": "Level 1",
+    "rules": {
+    "firewall_logging": {
+      "name": "Local Logging is Set for Firewall Events",
+      "field": "logging.firewall",
+      "operator": "exists",
+      "expected": true
+    },
+    "authentication_authorization_logging": {
+      "name": "Local Logging is Set for Authentication and Authorization Events",
+      "field": "logging.authentication_authorization",
+      "operator": "exists",
+      "expected": true
+    },
+    "interactive_commands_logging": {
+      "name": "Local Logging is Set for Interactive Commands",
+      "field": "logging.interactive_commands",
+      "operator": "exists",
+      "expected": true
+    },
+    "messages_logging": {
+      "name": "Local Logging is Set to Messages File",
+      "field": "logging.messages",
+      "operator": "exists",
+      "expected": true
+    }
+    }
+  },
+  {
+    "id": "CIS-6.7.1",
+    "severity": "Medium",
+    "level": "Level 1"
+  },
+  {
+    "id": "CIS-6.7.4",
+    "framework": "CIS",
+    "name": "NTP version 4 configured",
+    "field": "ntp.version",
+    "operator": "eq",
+    "expected": 4,
+    "severity": "Medium",
+    "level": "Level 1"
+  },
+  {
+    "id": "CIS-6.10.2.1",
+    "framework": "CIS",
     "field": "authentication.aaa_methods",
     "operator": "contains_any",
-    "expected": ["radius", "tacacs+"],
-    "severity": "High",
+    "expected": ["radius", "tacplus"],
     "level": "Level 1"
   },
   {
-    "id": "CIS-3.2.2",
+    "id": "CIS-6.3.2",
     "framework": "CIS",
-    "name": "Password encryption SHA256/scrypt",
-    "field": "authentication.password_encryption",
-    "operator": "in",
-    "expected": ["sha256", "scrypt"],
-    "severity": "High",
-    "level": "Level 2"
+    "name": "Local authentication only for external AAA failure",
+    "field": "authentication.local_password",
+    "operator": "eq",
+    "expected": false,
+    "level": "Level 1"
   },
   {
-    "id": "CIS-4.1.1",
+    "id": "CIS-6.6.9",
     "framework": "CIS",
-    "name": "No default SNMP communities",
+    "name": "Local passwords require multiple character sets",
+    "field": "authentication.password_change_type",
+    "operator": "eq",
+    "expected": "character-set",
+    "level": "Level 1"
+  },
+  {
+    "id": "CIS-6.6.10",
+    "framework": "CIS",
+    "name": "At least 4 character set changes in local passwords",
+    "field": "authentication.password_minimum_changes",
+    "operator": "ge",
+    "expected": 4,
+    "level": "Level 1"
+  },
+  {
+    "id": "CIS-6.6.11",
+    "framework": "CIS",
+    "name": "Local passwords are at least 10 characters",
+    "field": "authentication.password_minimum_length",
+    "operator": "ge",
+    "expected": 10,
+    "level": "Level 1"
+  },
+  {
+    "id": "CIS-6.6.12",
+    "framework": "CIS",
+    "name": "SHA512 is used to hash local passwords",
+    "field": "authentication.password_format",
+    "operator": "eq",
+    "expected": "sha512",
+    "level": "Level 1"
+  },
+  {
     "field": "management.snmp.community_strings",
     "operator": "not_contains_any",
-    "expected": ["public", "private"],
-    "severity": "Medium",
+    "expected": ["public", "private", "admin", "monitor", "security"],
     "level": "Level 1"
   }
+
 ]
