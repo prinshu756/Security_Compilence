@@ -35,6 +35,8 @@ def step_to_set_command(step: dict) -> str:
         return ""
     if kind == "noop":
         return f"# no-op (default): set {' '.join(step.get('path', []))}"
+    if kind == "verbatim":
+        return str(step.get("verbatim", "")).strip()
 
     path = step.get("path") or []
     if not path:
@@ -45,7 +47,7 @@ def step_to_set_command(step: dict) -> str:
     return f"set {' '.join(path)}"
 
 
-SORT_RANK = {"noop": 0, "set_line": 1, "edit": 2, "unmapped": 3}
+SORT_RANK = {"noop": 0, "set_line": 1, "verbatim": 1, "edit": 2, "unmapped": 3}
 
 
 def sort_steps(plan: List[dict]) -> List[dict]:

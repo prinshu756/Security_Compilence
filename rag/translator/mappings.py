@@ -103,7 +103,7 @@ def map_interface(iface) -> list:
     for addr in iface.ipv4:
         steps.append(_iface_step(
             "iface_addr", ["interfaces", j, "unit", "0", "family", "inet", "address"],
-            str(addr), f"ip address {addr.network.address} {addr.network.netmask}"))
+            str(addr), f"ip address {addr.ip} {addr.network.netmask}"))
 
     if iface.mtu:
         steps.append(_iface_step(
@@ -164,8 +164,8 @@ def _find_interface_for_network(ir, network: str):
 
 def map_static_route(route) -> dict:
     return {"kind": "set_line", "mapping": "static_route",
-            "path": ["routing-options", "static", "route", str(route.destination)],
-            "value": f"next-hop {route.next_hop}", "source": f"ip route {route.destination.network_address} {route.destination.netmask} {route.next_hop}",
+            "path": ["routing-options", "static", "route", str(route.destination), "next-hop"],
+            "value": route.next_hop, "source": f"ip route {route.destination.network_address} {route.destination.netmask} {route.next_hop}",
             "base_confidence": 0.95}
 
 

@@ -72,13 +72,36 @@ def build_plan(ir: DeviceIR) -> List[dict]:
     for route in ir.static_routes:
         plan.append(M.map_static_route(route))
 
-    # --- raw/unhandled commands ----------------------------------------------
+    # --- raw/unhandled commands: try the chatbot table, else unmapped --------
     for raw in ir.global_config.raw_commands:
-        plan.append({"kind": "unmapped", "mapping": "unmapped", "path": [],
-                     "value": None, "source": raw, "base_confidence": 0.2,
-                     "reason": f"No verified Junos equivalent for '{raw}'. Manual review required."})
+        mapped_line = _table_lookup(raw)
+        if mapped_line:
+            plan.append({"kind": "verbatim", "mapping": "table",
+                         "verbatim": mapped_line,
+                         "source": raw, "base_confidence": 0.85,
+                         "table_mapped": True})
+        else:
+            plan.append({"kind": "unmapped", "mapping": "unmapped", "path": [],
+                         "value": None, "source": raw, "base_confidence": 0.2,
+                         "reason": f"No verified Junos equivalent for '{raw}'. Manual review required."})
 
     return plan
+
+
+def _table_lookup(line: str) -> str:
+    """Reuse the chatbot's deterministic table (core/mappings.py) for global
+    commands that have no first-class IR construct."""
+    try:
+        from core.mappings import table_translate
+        out, _ = table_translate(line)
+        for o in out:
+            if o and o.startswith(("set ", "delete ")):
+                return o
+        if out and out[-1] and out[-1].startswith("# UNMAPPED"):
+            return None
+    except Exception:
+        pass
+    return None
 
 
 def attach_evidence(plan: List[dict], search_fn) -> List[dict]:
