@@ -63,19 +63,20 @@ JUNOS_HIERARCHY_TEMPLATES = [
 
 def _template_match(parts: List[str], template: List[str]) -> bool:
     """Match command path parts against a template. Placeholder <x> matches
-    exactly one part; {<x>} matches zero or one."""
-    # normalize: strip trailing value tokens that are leaf values (already
-    # handled by caller passing only path words)
+    exactly one part; {<x>} matches zero or one; a trailing <x> placeholder
+    may consume any remaining tokens (multi-word values like descriptions)."""
     pi, ti = 0, 0
     while pi < len(parts) and ti < len(template):
         t = template[ti]
         if t.startswith("{") and t.endswith("}"):
-            # optional -> try to consume or skip
             if pi < len(parts):
                 pi += 1
             ti += 1
             continue
         if t.startswith("<"):
+            # if this is the last template piece, consume the rest as value
+            if ti == len(template) - 1:
+                return True
             pi += 1
             ti += 1
             continue

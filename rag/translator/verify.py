@@ -10,6 +10,7 @@ warnings surfaced to the caller; nothing is silently dropped.
 """
 
 import copy
+from typing import List
 
 from config import MAX_VERIFY_ROUNDS
 
@@ -20,9 +21,12 @@ def critique(ir, plan: List[dict], commands: List[str], issues: List[dict]) -> L
     """Find problems: coverage of IR constructs + validation issues + unmapped."""
     problems = []
     mapped_sources = {s.get("source", "").lower() for s in plan if s.get("kind") != "unmapped"}
+    mapped_paths = {" ".join(s.get("path") or []).lower() for s in plan if s.get("kind") != "unmapped"}
 
     for itf in ir.interfaces:
-        covered = any(itf.cisco_name.lower() in src for src in mapped_sources)
+        jname = (itf.juniper_name or itf.name).lower()
+        covered = (jname in " ".join(mapped_sources)
+                   or any(jname in pth for pth in mapped_paths))
         if not covered and (itf.ipv4 or itf.description or itf.vlan_members):
             problems.append({
                 "type": "coverage", "severity": "high",

@@ -236,11 +236,14 @@ def normalize(ast: ConfigNode) -> DeviceIR:
         low = ln.text.lower()
         if low.startswith("ip route "):
             parts = ln.text.split()
-            if len(parts) >= 3:
+            # tokens: ip route <dest> <mask> <next-hop>
+            if len(parts) >= 4:
                 try:
-                    prefix = mask_to_prefix_len(parts[2])
-                    dest = IPv4Network(f"{parts[1]}/{prefix}", strict=False)
-                    ir.static_routes.append(StaticRouteIR(destination=dest, next_hop=parts[3]))
+                    prefix = mask_to_prefix_len(parts[3])
+                    dest = IPv4Network(f"{parts[2]}/{prefix}", strict=False)
+                    next_hop = parts[4] if len(parts) > 4 else None
+                    if next_hop:
+                        ir.static_routes.append(StaticRouteIR(destination=dest, next_hop=next_hop))
                 except Exception:
                     pass
             consumed_global.add(id(ln))
@@ -261,7 +264,9 @@ def _normalize_global(ir: DeviceIR, lines: list) -> set:
     g = ir.global_config
     for ln in lines:
         low = ln.text.lower()
-        if low.startswith("ip ssh version "):
+        if low.startswith("hostname "):
+            consumed.add(id(ln))
+        elif low.startswith("ip ssh version "):
             try:
                 g.ssh_version = int(ln.text.split()[3])
             except Exception:
@@ -269,9 +274,6 @@ def _normalize_global(ir: DeviceIR, lines: list) -> set:
             consumed.add(id(ln))
         elif low.startswith("ip name-server "):
             g.ip_dns_servers.append(ln.text.split(None, 2)[2])
-            consumed.add(id(ln))
-        elif low.startswith("ip http server"):
-            g.ip_http_server = True
             consumed.add(id(ln))
         elif low.startswith("snmp-server community "):
             parts = ln.text.split()
@@ -287,26 +289,13 @@ def _normalize_global(ir: DeviceIR, lines: list) -> set:
         elif low.startswith("logging host "):
             g.logging.hosts.append(ln.text.split(None, 2)[2])
             consumed.add(id(ln))
-        elif low.startswith("logging buffered"):
-            g.logging.buffered = True
-            consumed.add(id(ln))
         elif low.startswith("ntp server "):
             g.ntp.servers.append(ln.text.split(None, 2)[2])
             consumed.add(id(ln))
-        elif low.startswith("aaa "):
-            g.aaa.methods.append(ln.text)
-            consumed.add(id(ln))
-        elif low.startswith("banner motd"):
-            g.motd = ln.text
-            consumed.add(id(ln))
-        elif low.startswith("no cdp run"):
-            g.cdp_enabled = False
-            consumed.add(id(ln))
-        elif low.startswith("transport input ") and "telnet" in low:
-            g.telnet_enabled = True
-            consumed.add(id(ln))
-        elif low.startswith("line vty"):
-            consumed.add(id(ln))
+        # NOTE: lines like `logging buffered`, `banner motd`, `no cdp run`,
+        # `ip http server`, `aaa ...`, `line vty`, `transport input` are NOT
+        # consumed here; they are captured as raw_commands and then handled by
+        # the table map (core/mappings.py) or surfaced as unmapped.
     return consumed
 
 

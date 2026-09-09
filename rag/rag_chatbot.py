@@ -13,8 +13,7 @@ Modes:
 
 import sys
 
-from core.builder import answer_prompt, answer_system, call_ollama, translate_prompt, translate_system
-from core.mappings import table_translate
+from core.builder import answer_prompt, answer_system, call_ollama
 from core.store import ensure_database, search
 
 HELP = """\
@@ -39,26 +38,18 @@ def looks_like_config(text: str) -> bool:
 
 
 def translate(text: str, show_sources: bool) -> str:
-    """Deterministic table for the mapped lines, LLM for the rest."""
-    table, missing = table_translate(text)
-    table_out = "\n".join(l for l in table if l is not None)
-
-    if not missing:
-        return table_out
-
-    needle = next((l.strip() for l in text.splitlines()
-                   if any(l.lower().startswith(s) for s in
-                          ("interface ", "ip ssh", "snmp-server", "ntp ", "logging",
-                           "username", "enable secret", "aaa", "banner", "hostname"))),
-                  " ".join(text.strip().split()[:4]))
-    evidence = search(needle)
-    if show_sources and evidence:
-        print("\n[evidence]")
-        for r in evidence[:3]:
-            print(f"  -> {r['source']} | {' '.join(r['content'][:90].split())}")
-    prompt = translate_prompt(text, evidence, table_out)
-    raw = call_ollama(translate_system(), prompt)
-    return "\n".join(clean_set_lines(raw))
+    """Deterministic translator pipeline (parser -> IR -> planner -> validator)
+    with RAG evidence + LLM fallback for unmapped lines."""
+    from translator import translate_config
+    res = translate_config(text, use_llm=True, with_rag=True, persist=False)
+    if show_sources and res["unresolved"]:
+        print("\n[unresolved / needs review]")
+        for u in res["unresolved"]:
+            print(f"  -> {u}")
+    lines = []
+    for l in res["set_commands"]:
+        lines.append(l)
+    return "\n".join(lines)
 
 
 def clean_set_lines(raw: str) -> list:
