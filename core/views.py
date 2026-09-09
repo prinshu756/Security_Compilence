@@ -24,6 +24,23 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 INSTRUCTIONS_PATH = BASE_DIR / "ai_engine" / "schemas" / "llm_instructions.json"
 SCHEMA_PATH = BASE_DIR / "ai_engine" / "schemas" / "normalized_schema.json"
 RULES_PATH = BASE_DIR / "compliance" / "data" / "cis_rules.json"
+JUNIPER_RULES_PATH = BASE_DIR / "compliance" / "data" / "cis_juniper_rules.json"
+
+
+@api_view(["GET"])
+def health(request):
+    return Response({
+        "status": "ok",
+        "service": "ai_engine",
+        "uploads_available": DeviceUpload.objects.exists(),
+    })
+
+
+def _rules_for_vendor(vendor: str):
+    """Pick the CIS rules file matching the normalized config's vendor."""
+    if (vendor or "").strip().lower() in ("junos", "juniper"):
+        return _load_json(JUNIPER_RULES_PATH)
+    return _load_json(RULES_PATH)
 
 
 def _load_json(path: Path) -> dict:
@@ -31,6 +48,29 @@ def _load_json(path: Path) -> dict:
         return json.load(f)
 
 
+<<<<<<< Updated upstream
+=======
+@api_view(["POST"])
+def upload_config(request):
+    """
+    POST /api/uploads/
+    Accepts a raw config file (multipart), runs it through:
+    normalize -> validate -> (reinforce if needed) -> compliance check.
+    """
+    file_obj = request.FILES.get("config")
+    vendor = request.data.get("vendor", "cisco")
+
+    if not file_obj:
+        return Response({"error": "No config file provided."}, status=status.HTTP_400_BAD_REQUEST)
+
+    config_text = file_obj.read().decode("utf-8", errors="ignore")
+    if len(config_text.strip()) < 10:
+        return Response({"error": "Config file is empty or too short."}, status=status.HTTP_400_BAD_REQUEST)
+
+    instructions = _load_json(INSTRUCTIONS_PATH)
+    schema = _load_json(SCHEMA_PATH)
+    rules = _rules_for_vendor(vendor)
+>>>>>>> Stashed changes
 
 def _process_single_config(config_text, vendor, instructions, schema, rules):
     """Runs one config through normalize -> validate -> comply. Returns a dict result."""

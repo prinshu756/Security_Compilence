@@ -1,0 +1,314 @@
+{
+  "run_id": 9,
+  "source_vendor": "cisco",
+  "target_vendor": "junos",
+  "saved_path": "D:\\Security_Compilence\\rag\\normalised_junos.json",
+  "status": "done",
+  "overall_confidence": 1.0,
+  "confidence_by_category": {
+    "Global Systems": 1.0,
+    "Interfaces": 1.0,
+    "Other": 1.0,
+    "OSPF": 1.0,
+    "Routing": 1.0
+  },
+  "set_commands": [
+    "# no-op (default): set interfaces ge-0/0/0",
+    "set system host-name core-router",
+    "set protocols ospf",
+    "set routing-options static route 0.0.0.0/0 next-hop 192.168.1.254",
+    "set protocols ospf area 0 interface ge-0/0/0",
+    "set interfaces ge-0/0/0 unit 0 family inet address 192.168.1.1/24"
+  ],
+  "normalized_config": "# no-op (default): set interfaces ge-0/0/0\nset system host-name core-router\nset protocols ospf\nset routing-options static route 0.0.0.0/0 next-hop 192.168.1.254\nset protocols ospf area 0 interface ge-0/0/0\nset interfaces ge-0/0/0 unit 0 family inet address 192.168.1.1/24",
+  "ir": {
+    "vendor": "cisco",
+    "interfaces": [
+      {
+        "name": "ge-0/0/0",
+        "cisco_name": "GigabitEthernet0/0",
+        "description": null,
+        "ipv4": [
+          "192.168.1.1/24"
+        ],
+        "ipv6": [],
+        "vlan_members": null,
+        "vlan_mode": null,
+        "enabled": true,
+        "mtu": null,
+        "cdp_enabled": true,
+        "ip_ospf": null,
+        "juniper_name": "ge-0/0/0"
+      }
+    ],
+    "vlans": [],
+    "ospf": [
+      {
+        "process_id": "1",
+        "networks": [
+          {
+            "network": "192.168.1.0/24",
+            "wildcard": "0.0.0.255",
+            "area": "0"
+          }
+        ],
+        "router_id": null,
+        "passive_interfaces": []
+      }
+    ],
+    "bgp": [],
+    "static_routes": [
+      {
+        "destination": "0.0.0.0/0",
+        "next_hop": "192.168.1.254"
+      }
+    ],
+    "acls": [],
+    "global_config": {
+      "hostname": "core-router",
+      "snmp": {
+        "community_strings": [],
+        "location": null,
+        "contact": null
+      },
+      "logging": {
+        "hosts": [],
+        "buffered": false
+      },
+      "ntp": {
+        "servers": []
+      },
+      "aaa": {
+        "methods": []
+      },
+      "ssh_version": null,
+      "telnet_enabled": false,
+      "motd": null,
+      "cdp_enabled": true,
+      "ip_http_server": false,
+      "ip_dns_servers": [],
+      "raw_commands": []
+    }
+  },
+  "explanations": [
+    {
+      "source_line": "hostname core-router",
+      "target_command": "set system host-name core-router",
+      "mapping": "hostname",
+      "category": "Global Systems",
+      "confidence": 1.0,
+      "validated": true,
+      "llm_assisted": false,
+      "memorized": true,
+      "reasons": [
+        "Hostname",
+        "Cisco: hostname <name>",
+        "Junos: set system host-name <name>",
+        "Matched verified translation memory."
+      ],
+      "evidence": [
+        {
+          "source": "https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/sec_usr_ssh/configuration/xe-16/sec-usr-ssh-xe-16-book/sec-secure-shell-v2.html",
+          "score": 0.65,
+          "content": "Specifies the hostname.",
+          "section": "Device(config)# hostname host1"
+        },
+        {
+          "source": "https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/sec_usr_ssh/configuration/xe-16/sec-usr-ssh-xe-16-book/sec-secure-shell-v2.html",
+          "score": 0.65,
+          "content": "Specifies the hostname.",
+          "section": "Device(config)# hostname host1"
+        },
+        {
+          "source": "https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/sec_usr_ssh/configuration/xe-16/sec-usr-ssh-xe-16-book/sec-secure-shell-v2.html",
+          "score": 0.65,
+          "content": "Specifies the hostname.",
+          "section": "Device(config)# hostname host1"
+        }
+      ]
+    },
+    {
+      "source_line": "ip address 192.168.1.1 255.255.255.0",
+      "target_command": "set interfaces ge-0/0/0 unit 0 family inet address 192.168.1.1/24",
+      "mapping": "iface_addr",
+      "category": "Interfaces",
+      "confidence": 1.0,
+      "validated": true,
+      "llm_assisted": false,
+      "memorized": true,
+      "reasons": [
+        "Interface address",
+        "Cisco: ip address <ip> <mask>",
+        "Junos: set interfaces <if> unit 0 family inet address <ip/prefix>",
+        "Matched verified translation memory."
+      ],
+      "evidence": [
+        {
+          "source": "D:\\Security_Compilence\\rag\\knowledge_base\\pdf_files\\ntp-configuration-guide.pdf",
+          "score": 0.5525,
+          "content": "Use an IP address that is different from the one you just",
+          "section": "Example: Note"
+        },
+        {
+          "source": "D:\\Security_Compilence\\rag\\knowledge_base\\pdf_files\\ntp-configuration-guide.pdf",
+          "score": 0.5525,
+          "content": "Use an IP address that is different from the one you just",
+          "section": "Example: Note"
+        },
+        {
+          "source": "https://www.juniper.net/documentation/us/en/software/junos-space22.2/junos-space-workspaces/topics/task/junos-space-devices-ssh-connecting.html",
+          "score": 0.5376,
+          "content": "You can enter the IP address in either the IPv4 or IPv6",
+          "section": "Note:"
+        }
+      ]
+    },
+    {
+      "source_line": "no shutdown",
+      "target_command": "# no-op (default): set interfaces ge-0/0/0",
+      "mapping": "noop",
+      "category": "Other",
+      "confidence": 1.0,
+      "validated": true,
+      "llm_assisted": false,
+      "memorized": true,
+      "reasons": [
+        "Matched verified translation memory."
+      ],
+      "evidence": [
+        {
+          "source": "D:\\Security_Compilence\\rag\\knowledge_base\\pdf_files\\radius.pdf",
+          "score": 0.7682,
+          "content": "shuttingdown.",
+          "section": "beforetimingoutand"
+        },
+        {
+          "source": "D:\\Security_Compilence\\rag\\knowledge_base\\pdf_files\\radius.pdf",
+          "score": 0.7682,
+          "content": "shuttingdown.",
+          "section": "beforetimingoutand"
+        },
+        {
+          "source": "D:\\Security_Compilence\\rag\\knowledge_base\\pdf_files\\radius.pdf",
+          "score": 0.7682,
+          "content": "shuttingdown.",
+          "section": "beforetimingoutand"
+        }
+      ]
+    },
+    {
+      "source_line": "router ospf 1",
+      "target_command": "set protocols ospf",
+      "mapping": "ospf",
+      "category": "OSPF",
+      "confidence": 1.0,
+      "validated": true,
+      "llm_assisted": false,
+      "memorized": true,
+      "reasons": [
+        "OSPF process",
+        "Cisco: router ospf <pid>",
+        "Junos: set protocols ospf",
+        "Matched verified translation memory."
+      ],
+      "evidence": [
+        {
+          "source": "D:\\Security_Compilence\\rag\\knowledge_base\\pdf_files\\configuring_login_block.pdf",
+          "score": 0.4647,
+          "content": "users to enhance the security of a router by configuring",
+          "section": "The Login Enhancements-Login Block feature allows"
+        },
+        {
+          "source": "D:\\Security_Compilence\\rag\\knowledge_base\\pdf_files\\configuring_login_block.pdf",
+          "score": 0.4647,
+          "content": "users to enhance the security of a router by configuring",
+          "section": "The Login Enhancements-Login Block feature allows"
+        },
+        {
+          "source": "D:\\Security_Compilence\\rag\\knowledge_base\\pdf_files\\configuring_login_block.pdf",
+          "score": 0.4647,
+          "content": "users to enhance the security of a router by configuring",
+          "section": "The Login Enhancements-Login Block feature allows"
+        }
+      ]
+    },
+    {
+      "source_line": "network 192.168.1.0/24 0.0.0.255 area 0",
+      "target_command": "set protocols ospf area 0 interface ge-0/0/0",
+      "mapping": "ospf_area",
+      "category": "OSPF",
+      "confidence": 1.0,
+      "validated": true,
+      "llm_assisted": false,
+      "memorized": true,
+      "reasons": [
+        "OSPF area/interface",
+        "Cisco: network <net> <wc> area <a>",
+        "Junos: set protocols ospf area <a> interface <if>",
+        "Matched verified translation memory."
+      ],
+      "evidence": [
+        {
+          "source": "D:\\Security_Compilence\\rag\\knowledge_base\\pdf_files\\ntp-configuration-guide.pdf",
+          "score": 0.3533,
+          "content": "Use an IP address that is different from the one you just",
+          "section": "Example: Note"
+        },
+        {
+          "source": "D:\\Security_Compilence\\rag\\knowledge_base\\pdf_files\\ntp-configuration-guide.pdf",
+          "score": 0.3533,
+          "content": "Use an IP address that is different from the one you just",
+          "section": "Example: Note"
+        },
+        {
+          "source": "https://www.juniper.net/documentation/us/en/software/junos/netconf/topics/topic-map/netconf-ssh-connection.html",
+          "score": 0.3503,
+          "content": "Although you can configure NETCONF on any port from 1 through 65535, you should not configure access on a port",
+          "section": "Note:"
+        }
+      ]
+    },
+    {
+      "source_line": "ip route 0.0.0.0 0.0.0.0 192.168.1.254",
+      "target_command": "set routing-options static route 0.0.0.0/0 next-hop 192.168.1.254",
+      "mapping": "static_route",
+      "category": "Routing",
+      "confidence": 1.0,
+      "validated": true,
+      "llm_assisted": false,
+      "memorized": true,
+      "reasons": [
+        "Static route",
+        "Cisco: ip route <net> <mask> <next-hop>",
+        "Junos: set routing-options static route <net> next-hop <nh>",
+        "Matched verified translation memory."
+      ],
+      "evidence": [
+        {
+          "source": "https://www.juniper.net/documentation/us/en/software/junos/user-access-evo/user-access/topics/topic-map/junos-software-remote-access-overview.html",
+          "score": 0.4551,
+          "content": "command. To use any other routing instance, first configure the routing instance at the",
+          "section": "management-instance"
+        },
+        {
+          "source": "https://www.juniper.net/documentation/us/en/software/junos/user-access-evo/user-access/topics/topic-map/junos-software-remote-access-overview.html",
+          "score": 0.4551,
+          "content": "command. To use any other routing instance, first configure the routing instance at the",
+          "section": "management-instance"
+        },
+        {
+          "source": "https://www.juniper.net/documentation/us/en/software/junos/user-access-evo/user-access/topics/topic-map/junos-software-remote-access-overview.html",
+          "score": 0.4551,
+          "content": "command. To use any other routing instance, first configure the routing instance at the",
+          "section": "management-instance"
+        }
+      ]
+    }
+  ],
+  "warnings": [],
+  "unresolved": [],
+  "rounds": 1,
+  "ai_engine_path": "D:\\Security_Compilence\\ai_engine\\normalised_junos.json",
+  "baseline_path": "D:\\Security_Compilence\\ai_engine\\normalised_junos_baseline.json",
+  "passthrough": false
+}
