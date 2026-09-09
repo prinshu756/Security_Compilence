@@ -43,7 +43,6 @@ The `rag/` folder is a standalone FastAPI service (port 8001) that:
 ## 1. Start the RAG API
 
 ```python rag/main.py        # from inside rag/
-# -> http://127.0.0.1:8001  (interactive docs at /docs)
 ```
 
 ## 2. Check everything is working
