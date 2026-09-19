@@ -16,18 +16,15 @@ import json
 import requests
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
-from pathlib import Path
-from fastapi.responses import JSONResponse, FileResponse
 
 from .normalizer import (
     ai_engine_baseline_filepath,
     ai_engine_filepath,
     build_normalized_response,
-    source_txt_filepath,
     ir_to_baseline,
     target_filepath,
 )
-from .schemas import AskRequest, MemoryFeedbackRequest, TranslateRequest, VendorPair
+from .schemas import AskRequest, TranslateRequest, VendorPair
 
 router = APIRouter(prefix="/api")
 
@@ -85,7 +82,7 @@ def _handoff_to_ai_engine(config_text: str, target_vendor: str) -> dict:
         return {"success": False, "error": str(e)}
 
 
-def _run_translation(config_text: str, source_vendor: str, target_vendor: str , source_stem: str = "sample_config") -> dict:
+def _run_translation(config_text: str, source_vendor: str, target_vendor: str) -> dict:
     from translator import translate_config
 
     passthrough = target_vendor == "cisco"
@@ -144,9 +141,6 @@ def _run_translation(config_text: str, source_vendor: str, target_vendor: str , 
                        encoding="utf-8")
     baseline_path.write_text(json.dumps(baseline, indent=2, ensure_ascii=False, default=str),
                              encoding="utf-8")
-    txt_path = source_txt_filepath(source_stem, target_vendor)
-    txt_path.write_text("\n".join(result.get("set_commands") or []), encoding="utf-8")
-    document["txt_path"] = str(txt_path)
 
     # ---- hand the translated/normalized config to ai_engine ----------------
     document["ai_engine_handoff"] = _handoff_to_ai_engine(handoff_config, target_vendor)
@@ -170,25 +164,8 @@ def translate(req: TranslateRequest) -> dict:
     source, target = _validate_vendors(req.source_vendor, req.target_vendor)
     if not req.config_text or not req.config_text.strip():
         raise HTTPException(status_code=400, detail="config_text is required and cannot be empty")
-    document = _run_translation(req.config_text, source, target , source_stem="sample_config")
+    document = _run_translation(req.config_text, source, target)
     return JSONResponse(content=document)
-
-
-@router.post("/memory/feedback")
-def memory_feedback(req: MemoryFeedbackRequest) -> dict:
-    """Store a human-confirmed command normalization or explanation."""
-    from translator import memory
-
-    memory.save_mapping(
-        source_line=req.source_line.strip(),
-        mapping=req.mapping,
-        target=req.target.strip() if req.target else None,
-        confidence=req.confidence,
-        description=req.description.strip(),
-        source_type="human",
-    )
-    return {"success": True, "source_line": req.source_line,
-            "target": req.target, "source_type": "human"}
 
 
 @router.post("/translate/upload")
@@ -205,12 +182,7 @@ async def translate_upload(
         config_text = raw.decode("latin-1")
     if not config_text.strip():
         raise HTTPException(status_code=400, detail="Uploaded config file is empty")
-    stem = Path(file.filename).stem if file.filename else "sample_config"
-    # document = _run_translation(config_text, source, target , source_stem=stem)
-    # return JSONResponse(content=document)
-    document = _run_translation(config_text, source, target, source_stem=stem)
-    document["download_source_stem"] = stem
-    document["download_target_vendor"] = target
+    document = _run_translation(config_text, source, target)
     return JSONResponse(content=document)
 
 
@@ -273,34 +245,6 @@ def ask(req: AskRequest) -> dict:
             for r in evidence[:4]
         ],
     }
-
-# @router.get("/translate/download")
-# def download_translated_file(target_vendor: str, source_stem: str = "sample_config"):
-#     """
-#     GET /api/translate/download?target_vendor=junos&source_stem=sample_config
-#     Returns the translated config .txt file as a downloadable attachment.
-#     """
-#     path = source_txt_filepath(source_stem, target_vendor)
-#     if not path.exists():
-#         raise HTTPException(status_code=404, detail="Translated file not found. Run /translate/upload first.")
-
-#     return FileResponse(
-#         path=path,
-#         media_type="text/plain",
-#         filename=path.name,
-#     )
-@router.get("/translate/download")
-def download_translated_file(target_vendor: str, source_stem: str = "sample_config"):
-    path = source_txt_filepath(source_stem, target_vendor)
-    if not path.exists():
-        raise HTTPException(status_code=404, detail=f"Translated file not found at {path}")
-
-    return FileResponse(
-        path=path,
-        media_type="application/octet-stream",
-        filename=path.name,
-        headers={"Content-Disposition": f'attachment; filename="{path.name}"'},
-    )
 
 
 @router.post("/reindex")

@@ -115,7 +115,6 @@ def run(config_path: Path, source: str, target: str) -> int:
     print(f"  saved (ai_engine) : {doc.get('ai_engine_path')}")
     print(f"  baseline          : {doc.get('baseline_path')}")
     print(f"  unresolved        : {doc.get('unresolved')}")
-    print(f"  txt_path          : {doc.get('txt_path')}")
 
     print(f"\n  --- Juniper set commands ({len(doc.get('set_commands') or [])}) ---")
     for c in doc.get("set_commands") or []:

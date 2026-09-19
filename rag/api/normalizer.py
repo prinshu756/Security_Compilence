@@ -19,9 +19,6 @@ def slugify(value: str) -> str:
 def target_filepath(target_vendor: str) -> Path:
     return RAG_DIR / f"normalised_{slugify(target_vendor)}.json"
 
-def source_txt_filepath(source_stem : str , target_vendor : str) -> Path:
-    stem = slugify(source_stem) if source_stem else "sample_config"
-    return AI_ENGINE_DIR / f"{stem}_to_{slugify(target_vendor)}.txt"
 
 def ai_engine_filepath(target_vendor: str) -> Path:
     return AI_ENGINE_DIR / f"normalised_{slugify(target_vendor)}.json"
@@ -117,7 +114,6 @@ def build_normalized_response(
         "normalized_config": "\n".join(set_commands),
         "ir": result.get("ir"),
         "explanations": result.get("explanations"),
-        "human_review": result.get("human_review", []),
         "warnings": result.get("warnings"),
         "unresolved": result.get("unresolved"),
         "rounds": result.get("rounds"),

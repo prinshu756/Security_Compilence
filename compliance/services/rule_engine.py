@@ -47,7 +47,7 @@ def evaluate_rule(rule: dict, norm_data: dict) -> dict:
             "expected": expected,
             "operator": op,
             "field": field,
-            "severity": rule["severity"],
+            "severity": rule.get("severity", "Medium"),
             "level": rule.get("level"),
             "description": rule.get("description", ""),
             "reason": "Field not found in normalized data — needs human review, not auto Pass/Fail.",
@@ -86,7 +86,7 @@ def evaluate_rule(rule: dict, norm_data: dict) -> dict:
         "expected": expected,
         "operator": op,
         "field": field,
-        "severity": rule["severity"],
+        "severity": rule.get("severity", "Medium"),
         "level": rule.get("level"),
         "description": rule.get("description", ""),
     }

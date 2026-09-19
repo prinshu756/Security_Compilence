@@ -25,11 +25,3 @@ class TranslateRequest(BaseModel):
 class AskRequest(BaseModel):
     question: str = Field(..., description="Natural language question about Cisco/Junos config")
     show_sources: bool = True
-
-
-class MemoryFeedbackRequest(BaseModel):
-    source_line: str = Field(..., min_length=1)
-    target: Optional[str] = None
-    mapping: str = "human_review"
-    description: str = ""
-    confidence: float = Field(1.0, ge=0.0, le=1.0)
