@@ -48,3 +48,34 @@ def execute_remediation(connection, commands: list, delay_seconds: int = 5) -> d
         return {"executed": True, "output": output}
     except Exception as e:
         return {"executed": False, "reason": str(e)}
+
+
+def build_corrected_config(original_config_text: str, normalized_data: dict, 
+                             compliance_results: list, instructions: dict) -> str:
+    """
+    Produces a full corrected config: original lines for Pass rules kept as-is,
+    AI-generated fixes inserted (with comments) for Fail rules.
+    Does NOT touch any device — output is a text file only.
+    """
+    vendor = normalized_data.get("vendor", "unknown")
+    os_version = normalized_data.get("os_version", "unknown")
+
+    output_lines = [
+        f"! Corrected configuration - generated {vendor}",
+        "! Lines marked [AI-FIX] were changed to meet CIS benchmark requirements",
+        "! Review every AI-FIX line before applying to any device",
+        "",
+        original_config_text,
+        "",
+        "! ===== AI-Suggested Fixes for Failed Rules =====",
+    ]
+
+    failed_rules = [r for r in compliance_results if r["status"] == "Fail"]
+    for rule in failed_rules:
+        commands = generate_remediation(vendor, os_version, rule, instructions)
+        output_lines.append(f"! [AI-FIX] {rule['rule_id']} - {rule['name']}")
+        for cmd in commands:
+            output_lines.append(cmd)
+        output_lines.append("")
+
+    return "\n".join(output_lines)

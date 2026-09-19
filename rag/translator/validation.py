@@ -14,9 +14,7 @@ PASS based on the model's assurance -- the rules decide.
 import re
 from typing import Dict, List, Tuple
 
-# ---------------------------------------------------------------------------
 # 1. SYNTAX: known Junos hierarchy templates
-# ---------------------------------------------------------------------------
 
 # template parts: literal strings or placeholders (<x>, {<x>} = optional)
 JUNOS_HIERARCHY_TEMPLATES = [
@@ -139,9 +137,7 @@ def validate_commands(commands: List[str]) -> Tuple[List[dict], List[dict]]:
     return results, issues
 
 
-# ---------------------------------------------------------------------------
 # 2. SEMANTICS: cross-field checks
-# ---------------------------------------------------------------------------
 
 def validate_semantics(ir, commands: List[str]) -> List[dict]:
     problems = []
@@ -164,9 +160,7 @@ def validate_semantics(ir, commands: List[str]) -> List[dict]:
     return problems
 
 
-# ---------------------------------------------------------------------------
 # 3. CONSISTENCY: whole-config invariants
-# ---------------------------------------------------------------------------
 
 def check_consistency(ir, commands: List[str]) -> List[dict]:
     problems = []

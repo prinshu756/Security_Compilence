@@ -123,18 +123,25 @@ def attach_evidence(plan: List[dict], search_fn) -> List[dict]:
 
 
 def consult_memory(plan: List[dict]) -> List[dict]:
-    """Replace deterministic steps whose source was verified in the past with
-    the memorized target (higher confidence than the base table)."""
+    """Apply the best remembered mapping before any LLM fallback is considered."""
     from . import memory as mem
     for step in plan:
         src = step.get("source")
-        if not src or step.get("kind") == "unmapped":
+        if not src:
             continue
-        rec = mem.lookup_mapping(src)
+        rec = mem.lookup_mapping(src) or mem.lookup_semantic(src)
         if rec:
             step["base_confidence"] = max(step.get("base_confidence", 0.0),
                                           rec.get("confidence", 0.9))
             step["memorized"] = True
+            step["memory_match"] = rec
+            target = rec.get("target")
+            if target and target.startswith(("set ", "delete ")):
+                step["kind"] = "set_line"
+                step["mapping"] = rec.get("mapping", "memorized")
+                step["path"] = _parse_target_path(target)
+                step["value"] = _parse_target_value(target)
+                step["llm_assisted"] = False
     return plan
 
 
@@ -153,7 +160,8 @@ def llm_fallback(plan: List[dict], ir: DeviceIR, search_fn=None) -> List[dict]:
         if step.get("kind") != "unmapped":
             continue
 
-        rec = mem.lookup_mapping(step.get("source", ""))
+        rec = mem.lookup_mapping(step.get("source", "")) or mem.lookup_semantic(
+            step.get("source", ""))
         if rec and rec.get("target"):
             path = _parse_target_path(rec["target"])
             if path:
@@ -163,6 +171,7 @@ def llm_fallback(plan: List[dict], ir: DeviceIR, search_fn=None) -> List[dict]:
                 step["value"] = _parse_target_value(rec["target"])
                 step["base_confidence"] = rec.get("confidence", 0.95)
                 step["memorized"] = True
+                step["memory_match"] = rec
                 continue
 
         evidence = ""
@@ -174,6 +183,9 @@ def llm_fallback(plan: List[dict], ir: DeviceIR, search_fn=None) -> List[dict]:
                     for h in hits[:3])
             except Exception:
                 pass
+        memory_note = (rec or {}).get("description", "") if rec else ""
+        if memory_note:
+            evidence += f"\n- Prior memory note: {memory_note}"
         if not evidence:
             evidence = "(no knowledge base match)"
 
@@ -184,8 +196,11 @@ def llm_fallback(plan: List[dict], ir: DeviceIR, search_fn=None) -> List[dict]:
             f"Reason it needs manual mapping: {step.get('reason', '')}\n"
             "Available translated interface Junos names: " + json.dumps(itf_names) + "\n\n"
             "Junos reference:\n" + evidence[:1500] + "\n\n"
-            "Output ONLY JSON: {\"path\": [\"interfaces\", \"...\"], \"value\": <value or null>}. "
-            "If you cannot map it confidently, output {\"path\": []}."
+            "Output ONLY JSON: {\"path\": [\"interfaces\", \"...\"], "
+            "\"value\": <value or null>, \"confidence\": <0.0-1.0>, "
+            "\"description\": \"brief interpretation\"}. "
+            "If you cannot map it confidently, output {\"path\": [], "
+            "\"confidence\": <0.0-1.0>, \"description\": \"what is uncertain\"}."
         )
         try:
             raw = call_ollama(
@@ -200,7 +215,9 @@ def llm_fallback(plan: List[dict], ir: DeviceIR, search_fn=None) -> List[dict]:
                 step["mapping"] = "llm_assisted"
                 step["path"] = [str(p) for p in path]
                 step.setdefault("value", (suggestion or {}).get("value"))
-                step["base_confidence"] = 0.65
+                step["base_confidence"] = min(
+                    0.7, max(0.0, float((suggestion or {}).get("confidence", 0.65))))
+                step["interpretation"] = (suggestion or {}).get("description", "")
                 step["llm_assisted"] = True
         except Exception:
             pass

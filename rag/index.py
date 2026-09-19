@@ -30,6 +30,7 @@ def walk_files() -> list:
     files = []
     for ext in ("*.pdf", "*.docx", "*.txt", "*.md", "*.html", "*.htm"):
         files.extend(sorted(KNOWLEDGE_BASE.rglob(ext)))
+    print(f"This are the files {files}")
     return files
 
 

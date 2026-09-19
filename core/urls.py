@@ -7,4 +7,6 @@ urlpatterns = [
     path("uploads/<uuid:upload_id>/remediation/propose/", views.propose_remediation, name="propose_remediation"),
     path("uploads/<uuid:upload_id>/remediation/execute/", views.execute_remediation_view, name="execute_remediation"),
     path("uploads/report/pdf/", views.download_combined_report_pdf, name="download_combined_report_pdf"),
+    path("uploads/<uuid:upload_id>/remediation/propose/<str:rule_id>/", views.propose_single_remediation, name="propose_single_remediation"),
+    path("uploads/<uuid:upload_id>/corrected-config/", views.download_corrected_config, name="download_corrected_config"),
 ]
