@@ -19,14 +19,14 @@ import psycopg2
 from config import DB_HOST, DB_NAME, DB_PASSWORD, DB_PORT, DB_USER, EMBEDDING_LENGTH
 from core.embed import embed_text
 
-DDL = """
+DDL = f"""
 CREATE TABLE IF NOT EXISTS translator_mem (
     id          BIGSERIAL PRIMARY KEY,
     source_line TEXT NOT NULL,
     mapping     TEXT NOT NULL,
     target      TEXT NOT NULL,
     confidence  DOUBLE PRECISION NOT NULL DEFAULT 0.9,
-    run_ids     TEXT[] NOT NULL DEFAULT '{}',
+    run_ids     TEXT[] NOT NULL DEFAULT '{{}}',
     embedding   vector({EMBEDDING_LENGTH}),
     description TEXT NOT NULL DEFAULT '',
     source_type TEXT NOT NULL DEFAULT 'llm',
@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS translation_runs (
     source      TEXT NOT NULL,
     juniper     TEXT NOT NULL,
     overall     DOUBLE PRECISION NOT NULL,
-    by_category JSONB NOT NULL DEFAULT '{}',
+    by_category JSONB NOT NULL DEFAULT '{{}}',
     unresolved  JSONB NOT NULL DEFAULT '[]',
     warnings    JSONB NOT NULL DEFAULT '[]',
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
