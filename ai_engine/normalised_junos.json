@@ -1,0 +1,102 @@
+{
+  "run_id": 12,
+  "source_vendor": "cisco",
+  "target_vendor": "junos",
+  "saved_path": "D:\\MachineLearning\\Backend_copy\\Backend_copy\\rag\\normalised_junos.json",
+  "status": "done",
+  "overall_confidence": 1.0,
+  "confidence_by_category": {
+    "Other": 1.0
+  },
+  "set_commands": [
+    "set system login message HUMAN_LOOP_TEST"
+  ],
+  "normalized_config": "set system login message HUMAN_LOOP_TEST",
+  "ir": {
+    "vendor": "cisco",
+    "interfaces": [],
+    "vlans": [],
+    "ospf": [],
+    "bgp": [],
+    "static_routes": [],
+    "acls": [],
+    "global_config": {
+      "hostname": null,
+      "snmp": {
+        "community_strings": [],
+        "location": null,
+        "contact": null
+      },
+      "logging": {
+        "hosts": [],
+        "buffered": false
+      },
+      "ntp": {
+        "servers": []
+      },
+      "aaa": {
+        "methods": []
+      },
+      "ssh_version": null,
+      "telnet_enabled": false,
+      "motd": null,
+      "cdp_enabled": true,
+      "ip_http_server": false,
+      "ip_dns_servers": [],
+      "raw_commands": [
+        "description HUMAN_LOOP_TEST"
+      ]
+    }
+  },
+  "explanations": [
+    {
+      "source_line": "description HUMAN_LOOP_TEST",
+      "target_command": "set system login message HUMAN_LOOP_TEST",
+      "mapping": "human_review",
+      "category": "Other",
+      "confidence": 1.0,
+      "validated": true,
+      "llm_assisted": false,
+      "memorized": true,
+      "reasons": [
+        "Matched verified translation memory."
+      ],
+      "evidence": [
+        {
+          "source": "D:\\Security_Compilence\\rag\\knowledge_base\\pdf_files\\configuring_authentication.pdf",
+          "score": 0.2732,
+          "content": "MS-CHAP user in response to the challenge. It is only",
+          "section": "Contains the response value provided by a PPP"
+        },
+        {
+          "source": "D:\\Security_Compilence\\rag\\knowledge_base\\pdf_files\\configuring_authentication.pdf",
+          "score": 0.2732,
+          "content": "MS-CHAP user in response to the challenge. It is only",
+          "section": "Contains the response value provided by a PPP"
+        },
+        {
+          "source": "D:\\Security_Compilence\\rag\\knowledge_base\\pdf_files\\configuring_authentication.pdf",
+          "score": 0.2732,
+          "content": "MS-CHAP user in response to the challenge. It is only",
+          "section": "Contains the response value provided by a PPP"
+        }
+      ]
+    }
+  ],
+  "human_review": [],
+  "warnings": [],
+  "unresolved": [],
+  "rounds": 1,
+  "ai_engine_path": "D:\\MachineLearning\\Backend_copy\\Backend_copy\\ai_engine\\normalised_junos.json",
+  "baseline_path": "D:\\MachineLearning\\Backend_copy\\Backend_copy\\ai_engine\\normalised_junos_baseline.json",
+  "passthrough": false,
+  "txt_path": "D:\\MachineLearning\\Backend_copy\\Backend_copy\\ai_engine\\sample_config_to_junos.txt",
+  "ai_engine_handoff": {
+    "success": true,
+    "upload_id": null,
+    "status": null,
+    "compliance_report": null,
+    "baseline_json": null,
+    "errors": null
+  }
+}

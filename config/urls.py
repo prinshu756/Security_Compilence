@@ -17,9 +17,19 @@ Including another URLconf
 
 
 from django.contrib import admin
-from django.urls import path , include
+from django.conf import settings
+from django.urls import include, path
+from django.views.static import serve
+from django.views.generic.base import RedirectView
 
 urlpatterns = [
+    path("", RedirectView.as_view(url="/frontend/", permanent=False)),
+    path(
+        "frontend/",
+        serve,
+        {"document_root": settings.BASE_DIR / "frontend", "path": "index.html"},
+    ),
+    path("frontend/<path:path>", serve, {"document_root": settings.BASE_DIR / "frontend"}),
     path('admin/', admin.site.urls),
-     path("api/", include("core.urls")),
+    path("api/", include("core.urls")),
 ]

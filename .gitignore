@@ -82,3 +82,10 @@ dist/
 # Local Django files
 # =========================
 *.sqlite3
+
+COMPLETED.md
+DESIGN.md
+IMPLEMENTATION_SUMMARY.md
+repomix-output.xml
+start.bat
+start.ps1

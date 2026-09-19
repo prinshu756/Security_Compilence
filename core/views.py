@@ -7,10 +7,18 @@ Synchronous for the prototype (no Celery).
 
 import json
 from pathlib import Path
+from io import BytesIO
 
+from django.http import HttpResponse
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
+
+from reportlab.lib.pagesizes import letter
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
+from compliance.services.remediation import generate_remediation_commands, execute_remediation, build_corrected_config
 
 from .models import DeviceUpload, RemediationLog
 from .serializers import DeviceUploadSerializer
@@ -107,9 +115,40 @@ def _process_single_config(config_text, vendor, instructions, schema, rules):
     return DeviceUploadSerializer(upload).data
 
 
+
+@api_view(["POST"])
+def propose_single_remediation(request, upload_id, rule_id):
+    """
+    POST /api/uploads/<upload_id>/remediation/propose/<rule_id>/
+    Generates a fix suggestion for ONE specific failed rule only.
+    Does NOT execute anything on any device.
+    """
+    try:
+        upload = DeviceUpload.objects.get(id=upload_id)
+    except DeviceUpload.DoesNotExist:
+        return Response({"error": "Not found."}, status=404)
+
+    if not upload.compliance_report:
+        return Response({"error": "No compliance report available for this upload."}, status=400)
+
+    matching_rule = next(
+        (r for r in upload.compliance_report["results"] if r["rule_id"] == rule_id),
+        None,
+    )
+    if not matching_rule:
+        return Response({"error": f"Rule '{rule_id}' not found in this report."}, status=404)
+
+    if matching_rule["status"] != "Fail":
+        return Response({"error": f"Rule '{rule_id}' is not in Fail status, nothing to fix."}, status=400)
+
+    instructions = _load_json(INSTRUCTIONS_PATH)
+    proposals = generate_remediation_commands(upload.baseline_json, [matching_rule], instructions)
+
+    return Response({"upload_id": upload.id, "rule_id": rule_id, "proposal": proposals[0] if proposals else None})
+
+
 def generate_compliance_pdf(uploads):
     """Builds a single PDF covering one or more uploads (multi-device report)."""
-    from io import BytesIO
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=letter)
     styles = getSampleStyleSheet()
@@ -143,10 +182,14 @@ def generate_compliance_pdf(uploads):
         status_colors = {"Pass": colors.green, "Fail": colors.red, "Unknown": colors.orange}
         for r in upload.compliance_report["results"]:
             color = status_colors.get(r["status"], colors.black)
+            # story.append(Paragraph(
+            #     f'<b>[{r["rule_id"]}] {r["name"]}</b> — <font color="{color.hexval()[2:]}">{r["status"]}</font>',
+            #     styles["Normal"]
+            # ))
             story.append(Paragraph(
-                f'<b>[{r["rule_id"]}] {r["name"]}</b> — <font color="{color.hexval()[2:]}">{r["status"]}</font>',
-                styles["Normal"]
-            ))
+            f'<b>[{r["rule_id"]}] {r["name"]}</b> — <font color="{color.hexval()}">{r["status"]}</font>',
+             styles["Normal"]
+      ))
             story.append(Paragraph(
                 f'Field: {r["field"]} | Expected: {r["expected"]} | Actual: {r["actual"]} | Severity: {r["severity"]}',
                 styles["Normal"]
@@ -353,3 +396,33 @@ def execute_remediation_view(request, upload_id):
     )
 
     return Response(result)
+
+@api_view(["GET"])
+def download_corrected_config(request, upload_id):
+    """
+    GET /api/uploads/<id>/corrected-config/
+    Returns a downloadable corrected config file: original config +
+    AI-suggested fixes for every failed rule, clearly labeled.
+    """
+    try:
+        upload = DeviceUpload.objects.get(id=upload_id)
+    except DeviceUpload.DoesNotExist:
+        return Response({"error": "Not found."}, status=404)
+
+    if not upload.compliance_report or not upload.baseline_json:
+        return Response({"error": "No compliance report available for this upload."}, status=400)
+
+    instructions = _load_json(INSTRUCTIONS_PATH)
+
+    # We don't store the original raw config text (per your earlier decision
+    # to keep JSON-only persistence) - so reconstruct from raw_commands +
+    # baseline_json as the closest available representation.
+    original_text = "\n".join(upload.baseline_json.get("raw_commands", []))
+
+    corrected_text = build_corrected_config(
+        original_text, upload.baseline_json, upload.compliance_report["results"], instructions
+    )
+
+    response = HttpResponse(corrected_text, content_type="text/plain")
+    response["Content-Disposition"] = f'attachment; filename="corrected_config_{upload.vendor}_{upload.id}.txt"'
+    return response

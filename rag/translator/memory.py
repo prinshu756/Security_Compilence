@@ -16,27 +16,37 @@ from typing import Optional
 
 import psycopg2
 
-from config import DB_HOST, DB_NAME, DB_PASSWORD, DB_PORT, DB_USER
+from config import DB_HOST, DB_NAME, DB_PASSWORD, DB_PORT, DB_USER, EMBEDDING_LENGTH
+from core.embed import embed_text
 
-DDL = """
+DDL = f"""
 CREATE TABLE IF NOT EXISTS translator_mem (
     id          BIGSERIAL PRIMARY KEY,
     source_line TEXT NOT NULL,
     mapping     TEXT NOT NULL,
     target      TEXT NOT NULL,
     confidence  DOUBLE PRECISION NOT NULL DEFAULT 0.9,
-    run_ids     TEXT[] NOT NULL DEFAULT '{}',
+    run_ids     TEXT[] NOT NULL DEFAULT '{{}}',
+    embedding   vector({EMBEDDING_LENGTH}),
+    description TEXT NOT NULL DEFAULT '',
+    source_type TEXT NOT NULL DEFAULT 'llm',
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS translator_mem_source_idx
     ON translator_mem (lower(source_line));
+ALTER TABLE translator_mem ADD COLUMN IF NOT EXISTS embedding vector({EMBEDDING_LENGTH});
+ALTER TABLE translator_mem ADD COLUMN IF NOT EXISTS description TEXT NOT NULL DEFAULT '';
+ALTER TABLE translator_mem ADD COLUMN IF NOT EXISTS source_type TEXT NOT NULL DEFAULT 'llm';
+ALTER TABLE translator_mem ALTER COLUMN target DROP NOT NULL;
+CREATE INDEX IF NOT EXISTS translator_mem_embedding_idx
+    ON translator_mem USING hnsw (embedding vector_cosine_ops);
 
 CREATE TABLE IF NOT EXISTS translation_runs (
     id          BIGSERIAL PRIMARY KEY,
     source      TEXT NOT NULL,
     juniper     TEXT NOT NULL,
     overall     DOUBLE PRECISION NOT NULL,
-    by_category JSONB NOT NULL DEFAULT '{}',
+    by_category JSONB NOT NULL DEFAULT '{{}}',
     unresolved  JSONB NOT NULL DEFAULT '[]',
     warnings    JSONB NOT NULL DEFAULT '[]',
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -49,6 +59,7 @@ def ensure_memory_tables():
                             password=DB_PASSWORD, dbname=DB_NAME)
     conn.autocommit = True
     cur = conn.cursor()
+    cur.execute("CREATE EXTENSION IF NOT EXISTS vector")
     cur.execute(DDL)
     conn.close()
 
@@ -58,17 +69,19 @@ def connect():
                             password=DB_PASSWORD, dbname=DB_NAME)
 
 
-def save_mapping(source_line: str, mapping: str, target: str,
-                 confidence: float = 0.9, run_id: Optional[int] = None) -> None:
-    """Upsert one verified mapping into translation memory."""
+def save_mapping(source_line: str, mapping: str, target: Optional[str],
+                      confidence: float = 0.9, run_id: Optional[int] = None,
+                      description: str = "", source_type: str = "llm") -> None:
+    """Persist a command memory, including uncertain and description-only entries."""
     ensure_memory_tables()
     conn = connect()
     cur = conn.cursor()
     cur.execute(
-        """INSERT INTO translator_mem (source_line, mapping, target, confidence, run_ids)
-           VALUES (%s, %s, %s, %s, ARRAY[%s]::TEXT[])
-           ON CONFLICT DO NOTHING""",
-        (source_line, mapping, target, confidence, str(run_id) if run_id else ""),
+        """INSERT INTO translator_mem
+              (source_line, mapping, target, confidence, run_ids, embedding, description, source_type)
+              VALUES (%s, %s, %s, %s, ARRAY[%s]::TEXT[], %s::vector, %s, %s)""",
+        (source_line, mapping, target, confidence, str(run_id) if run_id else "",
+            str(embed_text(source_line)), description, source_type),
     )
     conn.commit()
     conn.close()
@@ -80,16 +93,42 @@ def lookup_mapping(source_line: str) -> Optional[dict]:
         conn = connect()
         cur = conn.cursor()
         cur.execute(
-            """SELECT source_line, mapping, target, confidence
+                """SELECT source_line, mapping, target, confidence, description, source_type
                FROM translator_mem WHERE lower(source_line) = lower(%s)
-               ORDER BY confidence DESC LIMIT 1""",
+                    AND target IS NOT NULL ORDER BY confidence DESC, created_at DESC LIMIT 1""",
             (source_line,),
         )
         row = cur.fetchone()
         conn.close()
         if row:
+                return {"source_line": row[0], "mapping": row[1], "target": row[2],
+                    "confidence": float(row[3]), "description": row[4],
+                    "source_type": row[5], "similarity": 1.0}
+    except Exception:
+        return None
+    return None
+
+
+def lookup_semantic(source_line: str, min_similarity: float = 0.78) -> Optional[dict]:
+    """Find a related command and return its target or explanation."""
+    ensure_memory_tables()
+    try:
+        conn = connect()
+        cur = conn.cursor()
+        vector = str(embed_text(source_line))
+        cur.execute(
+            """SELECT source_line, mapping, target, confidence, description, source_type,
+                      1 - (embedding <=> %s::vector) AS similarity
+               FROM translator_mem WHERE embedding IS NOT NULL
+               ORDER BY embedding <=> %s::vector LIMIT 1""",
+            (vector, vector),
+        )
+        row = cur.fetchone()
+        conn.close()
+        if row and float(row[6]) >= min_similarity:
             return {"source_line": row[0], "mapping": row[1], "target": row[2],
-                    "confidence": float(row[3])}
+                    "confidence": float(row[3]), "description": row[4],
+                    "source_type": row[5], "similarity": round(float(row[6]), 4)}
     except Exception:
         return None
     return None

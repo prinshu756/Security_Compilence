@@ -1,0 +1,42 @@
+{
+  "vendor": "junos",
+  "hostname": null,
+  "os_version": null,
+  "management": {
+    "ssh_version": null,
+    "telnet_enabled": false,
+    "http_enabled": false,
+    "https_enabled": null,
+    "snmp": {
+      "version": null,
+      "community_strings": []
+    }
+  },
+  "authentication": {
+    "aaa_methods": [],
+    "password_encryption": null
+  },
+  "logging": {
+    "remote_servers": [],
+    "local_buffered": false
+  },
+  "ntp": {
+    "servers": [],
+    "authenticated": null
+  },
+  "routing": {
+    "protocols": [],
+    "authentication": {
+      "ospf": false,
+      "bgp": false
+    }
+  },
+  "interfaces": [],
+  "banners": {
+    "motd": null,
+    "login": null
+  },
+  "raw_commands": [
+    "description HUMAN_LOOP_TEST"
+  ]
+}

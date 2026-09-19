@@ -28,6 +28,8 @@ from .validation import validate_commands, validate_semantics, check_consistency
 from .verify import run_verification_loop
 from .confidence import construct_confidence, aggregate_confidence, category_of
 
+HUMAN_REVIEW_THRESHOLD = 0.7
+
 
 def translate_config(
     config_text: str,
@@ -143,6 +145,18 @@ def translate_config(
             unresolved.append(msg)
 
     agg = aggregate_confidence(scores)
+    human_review = [
+        {
+            "source_line": ex["source_line"],
+            "suggested_target": ex["target_command"],
+            "confidence": ex["confidence"],
+            "description": " ".join(ex.get("reasons") or []),
+        }
+        for ex in explanations
+        if ex["source_line"] and (
+            ex["confidence"] < HUMAN_REVIEW_THRESHOLD or not ex["validated"]
+        )
+    ]
 
     # ---- 7. persist -------------------------------------------------------------
     run_id = None
@@ -158,6 +172,7 @@ def translate_config(
         "overall_confidence": agg["overall"],
         "confidence_by_category": agg["by_category"],
         "explanations": explanations,
+        "human_review": human_review,
         "warnings": list(dict.fromkeys(warnings)),
         "unresolved": unresolved,
         "rounds": verify["rounds"],
@@ -185,6 +200,8 @@ def _reasons(step: dict, mapping: str) -> list:
         reasons.append("Matched verified translation memory.")
     if step.get("llm_assisted"):
         reasons.append("LLM-assisted translation (lower confidence).")
+    if step.get("interpretation"):
+        reasons.append(str(step["interpretation"]))
     if step.get("kind") == "unmapped":
         reasons.append(step.get("reason", "No verified Junos equivalent found."))
     return reasons
@@ -201,14 +218,17 @@ def _persist(mem, source, commands, agg, unresolved, warnings, explanations, rou
             warnings=warnings,
         )
         for ex in explanations:
-            if (ex.get("validated") and ex.get("source_line") and ex.get("target_command")
-                    and ex.get("confidence", 0) >= 0.85):
+            if ex.get("source_line"):
                 mem.save_mapping(
                     source_line=ex["source_line"],
                     mapping=ex.get("mapping", "deterministic"),
-                    target=ex["target_command"],
+                    target=(ex.get("target_command")
+                            if ex.get("target_command", "").startswith(("set ", "delete "))
+                            else None),
                     confidence=ex["confidence"],
                     run_id=run_id,
+                    description=" ".join(ex.get("reasons") or ex.get("warnings") or []),
+                    source_type="verified" if ex.get("validated") else "uncertain",
                 )
         return run_id
     except Exception:

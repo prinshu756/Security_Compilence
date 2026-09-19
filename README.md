@@ -1,18 +1,18 @@
-Hey this is about the network security and its automation
+# Network Security Compliance
 
 To run the project you have to follow some steps
 
-activate the virtual environment
+**AI-assisted configuration analysis, compliance reporting, and Cisco-to-Junos translation.**
 
-```.\.venv\Scripts\Activate.ps1```
+Analyze network configurations against CIS and NIST rules, translate vendor syntax with a RAG pipeline, and improve future results with human-verified mappings.
 
 Apply the migrations
 
-```python manage.py migrate```
+</div>
 
 Run the Django server (ai_engine + compliance, port 8000)
 
-```python manage.py runserver```
+## What This Does
 
 and now test the upload
 
@@ -64,42 +64,6 @@ ai_engine upload endpoint so the compliance report is generated.
 
 Omit flags to be prompted interactively.
 
-## 4. Direct API use (for the frontend)
-
-Ask the user which vendors first:
-
-```curl http://127.0.0.1:8001/api/vendors
-# -> supported_sources: ["cisco","ios"], supported_targets: ["junos","juniper","cisco"]
-```
-
-Translate a config file into the target vendor:
-
-```curl.exe -X POST "http://127.0.0.1:8001/api/translate/upload?source_vendor=cisco&target_vendor=junos" -F "file=@D:\Security_Compilence\sample_config.txt"
-```
-
-Or post the config text as JSON:
-
-```curl.exe -X POST "http://127.0.0.1:8001/api/translate" -H "Content-Type: application/json" -d "{\"source_vendor\":\"cisco\",\"target_vendor\":\"junos\",\"config_text\":\"hostname x\\nip ssh version 2\"}"
-```
-
-Ask natural-language questions against the knowledge base:
-
-```curl.exe -X POST "http://127.0.0.1:8001/api/ask" -H "Content-Type: application/json" -d "{\"question\":\"what is the Junos equivalent of ip ssh timeout?\"}"
-```
-
-Rebuild the knowledge base index:
-
-```curl.exe -X POST "http://127.0.0.1:8001/api/reindex"
-```
-
----
-
-# RAG knowledge base / chatbot
-
-Index the knowledge base (Postgres pgvector):
-
-```python index.py --wipe        # from inside rag/
-```
 
 Interactive chatbot:
 
